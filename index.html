@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>減価償却 残高チェッカー</title>
+<style>
+:root{
+  --bg:#eef1f6;--card:#fff;--soft:#f5f7fb;--ink:#172033;--sub:#566074;--line:#d9dfe9;
+  --accent:#1d55a6;--accent-2:#2f74d0;--accent-bg:#e8f0fc;--on:#fff;
+  --warn:#8f4a06;--warn-bg:#fdf1e1;--warn-line:#e6a045;--ok:#17703f;--err:#a3261d;--err-bg:#fdecea;
+  --g0:#2360c4;--g1:#0b7667;--g2:#9c5a00;
+  --shadow:0 1px 2px rgba(23,32,51,.06),0 6px 18px rgba(23,32,51,.06);
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#10141a;--card:#1a1f27;--soft:#222834;--ink:#e9edf3;--sub:#a6aebb;--line:#343c49;
+  --accent:#7db2f2;--accent-2:#9cc5f6;--accent-bg:#1b2a3d;--on:#0b1520;
+  --warn:#f2b266;--warn-bg:#33271a;--warn-line:#a8742f;--ok:#62cc92;--err:#ff9d94;--err-bg:#3a1f1d;
+  --g0:#86b6f6;--g1:#55d1be;--g2:#f1b566;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.25);}
+}
+*{box-sizing:border-box}
+html{scroll-padding-bottom:150px;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Yu Gothic UI","Meiryo",system-ui,sans-serif;font-size:15px;line-height:1.55}
+.wrap{max-width:820px;margin:0 auto;padding:14px 12px 150px}
+button{font:inherit;cursor:pointer;color:var(--ink);border:1px solid var(--line);background:var(--card);border-radius:10px;min-height:44px;padding:8px 14px;transition:transform .1s,background .12s,border-color .12s,box-shadow .12s}
+button:active{transform:scale(.97)}
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid var(--accent-2);outline-offset:2px}
+input,select{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;min-height:46px;padding:8px 11px;width:100%}
+input[readonly]{background:var(--soft);color:var(--sub)}
+.num{font-variant-numeric:tabular-nums}
+
+/* ヘッダー */
+.top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:grid;place-items:center;flex:none;box-shadow:var(--shadow)}
+.logo svg{width:22px;height:22px;stroke:var(--on);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.top h1{font-size:17px;margin:0;line-height:1.25;flex:1}
+.top h1 small{display:block;font-size:11.5px;font-weight:normal;color:var(--sub)}
+.clear{background:var(--accent);border-color:var(--accent);color:var(--on);font-weight:bold;white-space:nowrap}
+.undo{display:none;align-items:center;justify-content:space-between;gap:10px;background:var(--ink);color:var(--bg);border-radius:12px;padding:8px 8px 8px 14px;margin-bottom:10px;font-size:13.5px}
+.undo.on{display:flex}
+.undo button{background:transparent;border-color:var(--bg);color:var(--bg);min-height:38px;font-weight:bold}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:var(--shadow)}
+.fold{padding:4px 14px;font-size:12.5px;color:var(--sub)}
+.fold summary{font-weight:bold;font-size:13.5px;color:var(--accent);min-height:46px}
+.fold ul{margin:2px 0 12px;padding-left:1.15em}
+.fold li{margin-bottom:4px}
+.fold li b{color:var(--warn)}
+
+.lab{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:bold;color:var(--sub);margin:0 0 7px}
+.step{width:22px;height:22px;border-radius:50%;background:var(--accent);color:var(--on);display:grid;place-items:center;font-size:12px;flex:none}
+.hint{font-weight:normal;font-size:11.5px;color:var(--warn)}
+.sec{margin-top:16px}
+
+/* 年分 */
+.years{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.years button{padding:6px 0;font-weight:bold;font-size:14.5px;line-height:1.2;min-height:50px}
+.years button small{display:block;font-size:10.5px;font-weight:normal;color:var(--sub)}
+.years button.on{background:var(--accent);border-color:var(--accent);color:var(--on);box-shadow:0 3px 10px rgba(29,85,166,.3)}
+.years button.on small{color:var(--on)}
+.years button.armed{border:2px dashed var(--warn-line);background:var(--warn-bg);color:var(--warn)}
+.years button.armed small{color:var(--warn)}
+
+/* 資産カード */
+.ahead{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.ahead b{font-size:15px}
+.del{min-height:44px;padding:6px 12px;font-size:12.5px;color:var(--sub)}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--soft);padding:4px;border-radius:12px;margin-bottom:8px}
+.tabs button{border:none;background:transparent;font-size:13px;font-weight:bold;color:var(--sub);padding:4px 2px;min-height:40px;border-radius:9px}
+.tabs button.on{background:var(--card);color:var(--g);box-shadow:0 1px 4px rgba(0,0,0,.14)}
+.pg{display:none;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:7px}
+.pg.on{display:grid}
+.chip{position:relative;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:1px;height:84px;padding:9px 9px 8px;border-radius:13px;
+  background:linear-gradient(180deg,var(--card),var(--soft));text-align:left;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.chip:hover{border-color:var(--g)}
+.chip .ic{width:21px;height:21px;fill:none;stroke:var(--g);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;margin-bottom:3px}
+.chip .cn{font-size:12.5px;font-weight:bold;line-height:1.25}
+.chip .cs{font-size:10px;color:var(--sub);line-height:1.2}
+.chip .cy{position:absolute;top:7px;right:8px;font-size:14px;font-weight:bold;color:var(--g);font-variant-numeric:tabular-nums}
+.chip .cy i{font-style:normal;font-size:10px;margin-left:1px}
+.chip.on{background:var(--g);border-color:var(--g);color:var(--on);box-shadow:0 5px 14px rgba(0,0,0,.2)}
+.chip.on .ic{stroke:var(--on)}.chip.on .cs,.chip.on .cy{color:var(--on)}
+.links{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}
+.links .pdf{justify-content:center;text-align:center;font-size:12.5px;line-height:1.35;padding:7px 8px}
+@media (min-width:640px){.links{display:flex}.links .pdf{font-size:13px}}
+.links .pdf{margin-top:0}
+button.pdf{font-weight:normal}
+.pdf{display:inline-flex;align-items:center;gap:6px;margin-top:9px;min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;color:var(--accent);text-decoration:none;font-size:13px;background:var(--card)}
+
+.yr{display:flex;align-items:center;gap:6px}
+.yr select{width:auto;font-weight:bold}
+.yr .yy{width:68px;text-align:center;font-size:19px;font-weight:bold}
+.stp{width:46px;padding:0;font-size:19px}
+.ymv{margin-left:auto;font-size:13px;font-weight:bold;color:var(--accent);text-align:right}
+.months{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:8px}
+.months button{padding:0;min-height:46px;font-weight:bold}
+.months button.on{background:var(--accent);border-color:var(--accent);color:var(--on)}
+.money{text-align:right;font-size:22px;font-weight:bold;font-variant-numeric:tabular-nums;padding-right:38px}
+.mwrap{position:relative}
+.mwrap::after{content:"円";position:absolute;right:13px;top:50%;transform:translateY(-50%);color:var(--sub);font-size:14px}
+.note{font-size:11.5px;color:var(--sub);margin-top:4px}
+.fwarn{font-size:12px;color:var(--warn);background:var(--warn-bg);border-radius:8px;padding:5px 9px;margin-top:5px;display:none}
+.fwarn.on{display:block}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.f label{display:block;font-size:12px;color:var(--sub);margin-bottom:3px}
+.chk{display:flex;align-items:center;gap:10px;min-height:46px;margin-top:8px;padding:0 12px;border:1px solid var(--line);border-radius:10px;font-size:13.5px;cursor:pointer}
+.chk input{width:20px;height:20px;min-height:0;flex:none;accent-color:var(--accent)}
+.used{display:none;margin-top:8px;padding:11px;border-radius:12px;background:var(--accent-bg)}
+.used.on{display:block}
+.used .calc{font-size:13px;margin-top:7px}
+.row3{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:8px}
+
+/* 結果 */
+.res{margin-top:16px}
+.pend{font-size:13px;color:var(--sub);background:var(--soft);border-radius:12px;padding:11px 13px}
+.pend b{color:var(--ink)}
+.err{color:var(--err);background:var(--err-bg);padding:10px 13px;border-radius:12px;font-size:13.5px;font-weight:bold}
+.rbox{border:2px solid var(--accent);border-radius:16px;overflow:hidden}
+.rhead{background:var(--accent);color:var(--on);padding:9px 13px;display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:13px;font-weight:bold}
+.badge{font-size:11px;font-weight:bold;border-radius:20px;padding:2px 9px;background:rgba(255,255,255,.22);color:var(--on);white-space:nowrap}
+@media (prefers-color-scheme:dark){.badge{background:rgba(0,0,0,.18)}}
+.badge.hot{background:var(--warn-bg);color:var(--warn)}
+.rmain{padding:13px 13px 6px}
+.rmain span{font-size:12px;color:var(--sub);display:block}
+.rmain strong{font-size:30px;line-height:1.2;color:var(--accent);font-variant-numeric:tabular-nums}
+.rmain strong.na{font-size:20px;color:var(--warn)}
+.kv{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;padding:6px 13px 12px}
+.kv div{background:var(--soft);border-radius:11px;padding:8px 9px;min-width:0}
+.kv span{display:block;font-size:10.5px;color:var(--sub);line-height:1.3}
+.kv strong{font-size:15.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tk{border-top:1px dashed var(--line);padding:9px 13px;font-size:12px;color:var(--sub);display:flex;flex-wrap:wrap;gap:4px 14px}
+.tk b{color:var(--ink);font-variant-numeric:tabular-nums}
+.rwarn{margin:0 13px 10px;font-size:12.5px;color:var(--warn);background:var(--warn-bg);border-radius:10px;padding:8px 10px}
+details.hist{border-top:1px dashed var(--line);padding:0 13px}
+summary{cursor:pointer;font-size:13px;color:var(--accent);min-height:44px;display:flex;align-items:center}
+.tblwrap{overflow-x:auto;margin-bottom:10px}
+table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
+th,td{border-bottom:1px solid var(--line);padding:5px 6px;text-align:right;white-space:nowrap}
+th:first-child,td:first-child,th:nth-child(2),td:nth-child(2){text-align:left}
+tr.cur td{background:var(--accent-bg);font-weight:bold}
+.add{width:100%;border-style:dashed;border-width:2px;font-weight:bold;color:var(--accent);min-height:52px}
+
+/* 下部の合計バー */
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--card);border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(0,0,0,.12);padding:8px 12px calc(8px + env(safe-area-inset-bottom))}
+.bar.warn{border-top:3px solid var(--warn-line)}
+.bin{max-width:796px;margin:0 auto;display:grid;grid-template-columns:1fr auto;gap:5px 10px;align-items:center}
+.bh{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--sub);min-width:0}
+.by{background:var(--accent);color:var(--on);font-weight:bold;border-radius:20px;padding:2px 10px;font-size:12px;white-space:nowrap}
+.by.alt{background:var(--warn-line);color:#201204}
+.bw{color:var(--warn);font-weight:bold;white-space:nowrap}
+.bvs{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,1fr);gap:4px 10px}
+@media (min-width:480px){.bvs{grid-template-columns:repeat(4,1fr);gap:6px}}
+.bv{display:flex;align-items:baseline;justify-content:space-between;gap:6px}
+@media (min-width:480px){.bv{display:block}}
+.bv span{display:block;font-size:10.5px;color:var(--sub);line-height:1.2}
+.bv{min-width:0}
+.bv b{font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.bv.m b{color:var(--accent);font-size:17px}
+.copy{min-height:36px;padding:4px 12px;font-size:12.5px;font-weight:bold;color:var(--accent);border-color:var(--accent)}
+.copy.done{background:var(--ok);border-color:var(--ok);color:var(--on)}
+@media (min-width:640px){.bin{grid-template-columns:auto 1fr auto}.bvs{grid-column:auto;grid-row:1;grid-column:2}.copy{grid-column:3}}
+.copy{background:var(--card);white-space:nowrap}
+.copy:hover{background:var(--accent-bg)}
+/* 決算書シート */
+.form{position:fixed;inset:0;z-index:20;background:rgba(10,15,25,.55);display:none;align-items:flex-end;justify-content:center}
+.form.on{display:flex}
+.sheet{background:var(--card);width:100%;max-width:1180px;max-height:92vh;border-radius:18px 18px 0 0;display:flex;flex-direction:column;box-shadow:0 -10px 40px rgba(0,0,0,.3)}
+@media (min-width:700px){.form{align-items:center;padding:20px}.sheet{border-radius:18px}}
+.shead{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.shead b{flex:1;font-size:14.5px}
+.sbody{overflow:auto;padding:12px 14px 16px}
+.paper{border:1.5px solid #2a6b3d;border-radius:6px;overflow-x:auto;background:#fbfdf9}
+@media (prefers-color-scheme:dark){.paper{background:#151c17;border-color:#5fae78}}
+.paper table{border-collapse:collapse;font-size:12px;min-width:1080px;width:100%;color:var(--ink)}
+.paper th{background:#e3f0e6;color:#1d4d2b;font-weight:bold;font-size:10.5px;line-height:1.35;padding:5px 4px;border:1px solid #9cc6a6;text-align:center;vertical-align:middle;white-space:normal}
+@media (prefers-color-scheme:dark){.paper th{background:#203226;color:#bfe6c9;border-color:#3f6b4b}}
+.paper th small{display:block;font-weight:normal;font-size:9.5px}
+.paper td{border:1px solid #c5dccb;padding:7px 5px;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+@media (prefers-color-scheme:dark){.paper td{border-color:#36513f}}
+.paper td.l{text-align:left}.paper td.c{text-align:center}
+.paper tbody td:first-child,.paper tfoot td:first-child{position:sticky;left:0;background:#fbfdf9;z-index:1;box-shadow:2px 0 0 #c5dccb}
+.paper thead th:first-child{position:sticky;left:0;z-index:2}
+@media (prefers-color-scheme:dark){.paper tbody td:first-child,.paper tfoot td:first-child{background:#151c17;box-shadow:2px 0 0 #36513f}}
+.paper tr.sum td{font-weight:bold;background:rgba(42,107,61,.08)}
+.snote{font-size:11.5px;color:var(--sub);margin-top:8px}
+/* 資本的支出と修繕費のフロー */
+.flow{font-size:13.5px}
+.fstart{text-align:center;font-weight:bold;border:2px dashed var(--sub);border-radius:10px;padding:8px;margin-bottom:6px}
+.fq{list-style:none;margin:0;padding:0}
+.fq>li{position:relative;display:grid;grid-template-columns:1fr minmax(120px,38%);gap:8px;align-items:stretch;padding:0 0 22px}
+.fq>li::after{content:"いいえ ↓";position:absolute;left:14px;bottom:3px;font-size:11px;color:var(--sub)}
+.fq>li.last::after,.fq>li:nth-child(7)::after{content:none}
+.fq>li:nth-child(7),.fq>li.last{grid-template-columns:1fr}
+.fq>li:nth-child(7){padding-bottom:12px}
+.q{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-weight:bold;line-height:1.45;display:flex;gap:8px;align-items:flex-start}
+.q.sm{font-size:12.5px;padding:7px 9px;margin:6px 0}
+.q small{font-weight:normal;color:var(--sub);font-size:11px}
+.qn{flex:none;width:21px;height:21px;border-radius:50%;background:var(--ink);color:var(--card);display:grid;place-items:center;font-size:11.5px;margin-top:1px}
+.yes{border-radius:10px;padding:8px 10px;font-size:12.5px;line-height:1.4;display:flex;flex-direction:column;justify-content:center}
+.yes small{font-size:10.5px;opacity:.8;margin-top:2px}
+.rep{background:#e6f4ea;color:#14532d;border:1px solid #9fd1ae}
+.cap{background:#fdeceb;color:#7f1d1d;border:1px solid #f0a8a2}
+@media (prefers-color-scheme:dark){.rep{background:#16301f;color:#a7e3bb;border-color:#2f6b45}.cap{background:#3a1b1a;color:#ffb4ad;border-color:#7a3a35}}
+.branch{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.bcol{border:1px solid var(--line);border-radius:10px;padding:8px}
+.bh{font-weight:bold;font-size:12.5px}
+.bh small{font-weight:normal;color:var(--sub);font-size:10.5px;margin-left:5px}
+.split{display:grid;gap:5px;font-size:12px;line-height:1.4}
+.split>div{border-radius:8px;padding:6px 8px}
+.split.end{grid-template-columns:1fr 1fr;margin-top:6px;font-size:13px}
+.no{font-size:11px;color:var(--sub);margin-top:6px}
+.fnote{font-size:11.5px;color:var(--sub);margin-top:10px;line-height:1.6}
+@media (max-width:420px){.fq>li{grid-template-columns:1fr 112px}.branch{grid-template-columns:1fr}}
+#fNote{display:none;color:var(--warn);background:var(--warn-bg);border-radius:8px;padding:6px 10px;font-size:12.5px;margin-bottom:8px}
+
+
+@media (max-width:359px){.kv strong{font-size:13.5px}.bv b{font-size:14px}.bv.m b{font-size:15px}.rmain strong{font-size:26px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="logo" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8.5 7.5h7M8.5 12h2M13.5 12h2M8.5 16h2M13.5 16h2"/></svg></div>
+    <h1>減価償却 残高チェッカー<small>定額法・旧定額法／参考計算（入力は保存されません）</small></h1>
+    <button id="clear" class="clear" type="button">クリア</button>
+  </div>
+  <div class="undo" id="undo" role="status"><span>クリアしました</span><button type="button" id="undoBtn">元に戻す</button></div>
+
+
+  <div class="card">
+    <div class="lab">申告する年分 <span class="hint" id="thint" aria-live="polite"></span></div>
+    <input type="hidden" id="target">
+    <div class="years" id="years"></div>
+  </div>
+
+  <div id="assets"></div>
+  <button id="add" class="add" type="button">＋ 資産を追加</button>
+
+  <details class="card fold" style="margin-top:14px">
+    <summary>このツールで計算できない資産（タップで開く）</summary>
+    <ul>
+      <li>定率法の届出がある資産／自宅などから貸家・事業用に<b>転用</b>した資産／<b>相続・贈与</b>で取得した資産／本年中に<b>売却・除却・廃業</b>した資産</li>
+      <li>取得価額は建物・設備の分だけ（<b>土地を除く</b>）。取得した年に全額を経費にした資産は入れません。</li>
+    </ul>
+  </details>
+  <details class="card fold">
+    <summary>計算のルール・注意（タップで開く）</summary>
+    <ul>
+      <li>取得年月＝事業に使い始めた年月として計算します。取得と使い始めの時期が違う資産は対象外です。</li>
+      <li>平成19年3月以前の取得は<b>旧定額法</b>（取得価額×90%×償却率。累計が95%に達した翌年分から5年均等償却。均等償却は平成20年分以後）、平成19年4月以後の取得は<b>定額法</b>（1円が残るまで）。</li>
+      <li>償却率は、旧定額法が耐用年数省令の別表第七（2〜50年に対応）、定額法が別表第八の値です。</li>
+      <li>償却費の1円未満は切り上げ、95%相当額も切り上げます（確定申告書等作成コーナーの端数処理に合わせています）。必要経費算入額の1円未満は切り捨てます。</li>
+      <li>個人の減価償却は強制償却です。過去に計上していない年があっても、計上したものとして残高を減らします。</li>
+      <li>事業専用割合は「必要経費算入額」だけに反映し、未償却残高は償却費の全額で減らします。</li>
+      <li>中古資産の簡便法：法定耐用年数を全部経過→法定×20%、一部経過→（法定−経過）＋経過×20%。1年未満切捨て、2年未満は2年。購入後の改良費が取得価額の50%を超える場合は使えません。</li>
+      <li>耐用年数の目安：金属造（鉄骨）は骨格材の肉厚で判定します。車両は一般用の年数で、運送業用などは別です。太陽光発電設備の17年は売電用などの場合で、製造業の自家消費などは業種の設備の年数になります。</li>
+      <li>資本的支出（平成19年4月以後）は、別の資産として1件追加してください。</li>
+      <li>取得価額が40万円未満の資産は、取得した年に少額の特例や一括償却を使っていないか確認してください（使っていれば残高はありません）。</li>
+    </ul>
+  </details>
+</div>
+
+<div class="bar" id="bar">
+  <div class="bin">
+    <div class="bh"><span class="by" id="bYear"></span><span id="bCount"></span><span class="bw" id="bWarn"></span></div>
+    <button type="button" class="copy" id="copy" aria-haspopup="dialog">減価償却費欄</button>
+    <div class="bvs">
+      <div class="bv m"><span>前年末残高</span><b id="bPrev">0円</b></div>
+      <div class="bv"><span>本年償却費</span><b id="bDep">0円</b></div>
+      <div class="bv"><span>必要経費算入額</span><b id="bExp">0円</b></div>
+      <div class="bv"><span>当年末未償却残高</span><b id="bEnd">0円</b></div>
+    </div>
+  </div>
+</div>
+
+<div class="form" id="form" role="dialog" aria-modal="true" aria-labelledby="fTitle">
+  <div class="sheet">
+    <div class="shead"><b id="fTitle"></b><button type="button" id="fClose">閉じる</button></div>
+    <div class="sbody">
+      <div id="fNote"></div>
+      <div class="paper"><table>
+        <thead><tr>
+          <th style="min-width:110px">減価償却資産<br>の名称等<small>（繰延資産を含む）</small></th>
+          <th>面積<br>又は<br>数量</th><th>取得<br>年月</th>
+          <th>㋑<br>取得価額<small>（償却保証額）</small></th>
+          <th>㋺<br>償却の基礎<br>になる金額</th>
+          <th>償却<br>方法</th><th>耐用<br>年数</th>
+          <th>㋩<br>償却率又は<br>改定償却率</th>
+          <th>㋥<br>本年中の<br>償却期間</th>
+          <th>㋭<br>本年分の<br>普通償却費<small>（㋺×㋩×㋥）</small></th>
+          <th>㋬<br>割増（特別）<br>償却費</th>
+          <th>㋣<br>本年分の<br>償却費合計<small>（㋭＋㋬）</small></th>
+          <th>㋠<br>事業専用<br>割合</th>
+          <th>㋷<br>本年分の必要<br>経費算入額<small>（㋣×㋠）</small></th>
+          <th>㋦<br>未償却残高<small>（期末残高）</small></th>
+          <th style="min-width:70px">摘要</th>
+        </tr></thead>
+        <tbody id="fBody"></tbody><tfoot id="fFoot"></tfoot>
+      </table></div>
+      <div class="snote">表は横にスクロールできます。㋬割増（特別）償却費は計算していません。均等償却の年は、㋺に取得価額の5%相当額を入れ、㋩は空欄（−）にしています。</div>
+    </div>
+  </div>
+</div>
+
+<div class="form" id="cap" role="dialog" aria-modal="true" aria-labelledby="capTitle">
+  <div class="sheet" style="max-width:720px">
+    <div class="shead"><b id="capTitle">資本的支出と修繕費の区分（判定フロー）</b><button type="button" id="capClose">閉じる</button></div>
+    <div class="sbody">
+      <div class="flow">
+        <div class="fstart">修理・改良等のための支出金額</div>
+        <ol class="fq">
+          <li><div class="q"><span class="qn">1</span><span>20万円未満か</span></div><div class="yes rep">はい → <b>修繕費</b><small>所基通37-12(1)</small></div></li>
+          <li><div class="q"><span class="qn">2</span><span>周期がおおむね3年以内か</span></div><div class="yes rep">はい → <b>修繕費</b><small>所基通37-12(2)</small></div></li>
+          <li><div class="q"><span class="qn">3</span><span>明らかに価値を高めるもの又は耐久性を増すものか</span></div><div class="yes cap">はい → <b>資本的支出</b><small>所令181・所基通37-10</small></div></li>
+          <li><div class="q"><span class="qn">4</span><span>通常の維持管理のものか</span></div><div class="yes rep">はい → <b>修繕費</b><small>所基通37-11</small></div></li>
+          <li><div class="q"><span class="qn">5</span><span>災害等によりき損したものを原状に復するためのものか</span></div><div class="yes rep">はい → <b>修繕費</b><small>所基通37-11・37-12の2</small></div></li>
+          <li><div class="q"><span class="qn">6</span><span>60万円未満又は前年末取得価額<sup>（注）</sup>の10%以下か</span></div><div class="yes rep">はい → <b>修繕費</b><small>所基通37-13</small></div></li>
+          <li><div class="q"><span class="qn">7</span><span>災害に伴って支出したものか</span></div>
+            <div class="branch">
+              <div class="bcol">
+                <div class="bh">はい<small>所基通37-14の2</small></div>
+                <div class="q sm">割合区分による方法を採用しているか</div>
+                <div class="no" style="margin:0 0 4px">はい →</div>
+                <div class="split"><div class="cap"><b>70%相当額</b>…資本的支出</div><div class="rep"><b>30%相当額</b>…修繕費</div></div>
+                <div class="no">いいえ → ⑧へ</div>
+              </div>
+              <div class="bcol">
+                <div class="bh">いいえ<small>所基通37-14</small></div>
+                <div class="q sm">割合区分による方法を採用しているか</div>
+                <div class="no" style="margin:0 0 4px">はい →</div>
+                <div class="split"><div class="rep"><b>(A)</b>…修繕費<br><small>支出金額の30%と前年末取得価額<sup>（注）</sup>の10%の、いずれか少ない金額</small></div><div class="cap"><b>支出金額－(A)</b>…資本的支出</div></div>
+                <div class="no">いいえ → ⑧へ</div>
+              </div>
+            </div>
+          </li>
+          <li class="last"><div class="q"><span class="qn">8</span><span>実質により判定する　<small>所令181</small><br>資本的支出か</span></div>
+            <div class="split end"><div class="cap">はい → <b>資本的支出</b></div><div class="rep">いいえ → <b>修繕費</b></div></div></li>
+        </ol>
+        <div class="fnote">各質問で「いいえ」なら、次の番号へ進みます。<br>（注）「前年末取得価額」とは、原則として前年12月31日に有する固定資産の最初の取得価額に、既にその固定資産につき支出された資本的支出の額を加算したものです。</div>
+      </div>
+      <div class="snote">資本的支出になった部分は、別の資産として1件追加してください（平成19年4月以後の支出）。</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ================= 設定 =================
+const DEFAULT_TARGET = 2026;                       // 既定の申告年分（令和8年分）
+const YEAR_BTNS = [2026, 2025, 2024, 2023, 2022];  // 年分ボタン（左が既定）
+const ERAS = {reiwa:{n:'令和',base:2018,max:99}, heisei:{n:'平成',base:1988,max:31}, showa:{n:'昭和',base:1925,max:64}};
+const HINT0 = '令和8年分以外は2回タップで選択';
+
+// ================= 償却率 =================
+// 定額法（H19.4.1以後取得）：別表第八 = 1/n の小数点以下3位未満切上げ（1000分率）
+function newRate(n){ return Math.floor((1000 + n - 1) / n); }
+// 旧定額法（H19.3.31以前取得）：別表第七（1000分率）
+const OLD_RATE = {2:500,3:333,4:250,5:200,6:166,7:142,8:125,9:111,10:100,11:90,12:83,13:76,14:71,15:66,16:62,17:58,18:55,19:52,20:50,
+21:48,22:46,23:44,24:42,25:40,26:39,27:37,28:36,29:35,30:34,31:33,32:32,33:31,34:30,35:29,36:28,37:27,38:27,39:26,40:25,
+41:25,42:24,43:24,44:23,45:23,46:22,47:22,48:21,49:21,50:20};
+
+const $ = s => document.querySelector(s);
+const yen = v => v.toLocaleString('ja-JP') + '円';
+const z2h = s => String(s == null ? '' : s).replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).replace(/[．。]/g, '.').replace(/[－ー−]/g, '-').replace(/％/g, '%');
+function wareki(y){
+  if (y >= 2019) return '令和' + (y === 2019 ? '元' : (y - 2018)) + '年';
+  if (y >= 1989) return '平成' + (y === 1989 ? '元' : (y - 1988)) + '年';
+  return '昭和' + (y - 1925) + '年';
+}
+function rnd(num, den, mode){ return mode === 'ceil' ? Math.ceil(num / den - 1e-9) : Math.floor(num / den + 1e-9); }
+// 整数として読めるときだけ数値を返す（それ以外は NaN）
+function int(v){ v = z2h(v).replace(/[,，\s]/g, ''); return /^\d+$/.test(v) ? Number(v) : NaN; }
+
+// ================= 中古資産（簡便法）=================
+function usedLife(legalYears, elapsedY, elapsedM){
+  const legalM = legalYears * 12, elM = elapsedY * 12 + elapsedM;
+  const months = elM >= legalM ? legalM * 0.2 : (legalM - elM) + elM * 0.2;
+  return Math.max(2, Math.floor(months / 12 + 1e-9));
+}
+
+// ================= 計算本体 =================
+function schedule(a, target, mode){
+  const old = a.acqDate < new Date(2007, 3, 1);
+  let rate;
+  if (old) {
+    rate = OLD_RATE[a.life];
+    if (!rate) throw new Error('旧定額法（平成19年3月以前の取得）は、耐用年数2〜50年まで対応しています。');
+  } else {
+    if (a.life < 2 || a.life > 100) throw new Error('耐用年数は2〜100年で入力してください。');
+    rate = newRate(a.life);
+  }
+  const rows = [];
+  let bv = a.cost;
+  // 旧定額法：95%相当額は切上げ（作成コーナーと同じ）。残高の下限は1円。
+  const floorBV = old ? Math.max(1, a.cost - Math.floor((a.cost * 95 + 99) / 100)) : 1;
+  let reached = null, equal = null;
+  for (let y = a.useY; y <= target; y++) {
+    const m = (y === a.useY) ? 13 - a.useM : 12;
+    let dep = 0, note = '', kind = 'normal';
+    if (!old) {
+      dep = Math.min(rnd(a.cost * rate * m, 12000, mode), bv - 1);
+      note = m < 12 ? m + 'か月' : '';
+      if (bv <= 1) kind = 'done';
+    } else if (reached === null) {
+      dep = Math.min(rnd(a.cost * 9 * rate * m, 120000, mode), bv - floorBV);
+      note = m < 12 ? m + 'か月' : '';
+      if (bv - dep <= floorBV) { reached = y; note = (note ? note + '・' : '') + '95%到達'; }
+    } else {
+      const start = Math.max(reached + 1, 2008);
+      if (y >= start && bv > 1) {
+        if (equal === null) equal = rnd(floorBV - 1, 5, mode);
+        dep = Math.min(equal, bv - 1); note = '5年均等'; kind = 'equal';
+      } else if (bv > 1) { note = '償却なし（平成19年分以前）'; kind = 'none'; }
+      else kind = 'done';
+    }
+    dep = Math.max(0, dep);
+    const begin = bv; bv -= dep;
+    rows.push({y, m, begin, dep, end: bv, note, kind});
+  }
+  return {old, rate, rows, floorBV};
+}
+
+// ================= よく使う資産（耐用年数省令 別表第一・第二）=================
+const ICONS = {
+  house:'<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/>',
+  office:'<rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2M11 21v-3h2v3"/>',
+  shop:'<path d="M4 9h16l-1.2-5H5.2z"/><path d="M5 9v11h14V9M9 20v-6h6v6"/>',
+  bolt:'<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+  drop:'<path d="M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11z"/>',
+  air:'<path d="M3 8h12a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h8"/>',
+  road:'<path d="M7 21 10 3M17 21 14 3M12 6v2M12 11v2M12 16v2"/>',
+  car:'<path d="M3 16v-3l2-5h14l2 5v3z"/><circle cx="7.5" cy="17" r="1.6"/><circle cx="16.5" cy="17" r="1.6"/>',
+  truck:'<path d="M2 6h11v10H2zM13 9h5l3 3.5V16h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17" cy="17.5" r="1.6"/>',
+  pc:'<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4"/>',
+  fridge:'<rect x="6" y="2.5" width="12" height="19" rx="1.5"/><path d="M6 9.5h12M9 5.5v2M9 12.5v3"/>',
+  copier:'<path d="M4 10h16v7H4zM7 10V5h10v5M7 17v3h10v-3"/><path d="M16 13h1.5"/>',
+  bike:'<circle cx="5.5" cy="16" r="3"/><circle cx="18.5" cy="16" r="3"/><path d="M5.5 16 10 9h5l3.5 7M10 9 8.5 6.5H11M15 9l-2 7H10"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+};
+const PRESETS = [
+  ['建物', [['木造住宅',22,'house','店舗も同じ'],['木造事務所',24,'office'],['木骨モルタル住宅',20,'house','店舗も同じ'],
+            ['軽量鉄骨住宅',19,'house','肉厚3mm以下'],['鉄骨住宅',27,'house','3mm超4mm以下'],['重量鉄骨住宅',34,'house','肉厚4mm超'],
+            ['RC・SRC住宅',47,'office'],['RC・SRC店舗',39,'shop','病院も同じ'],['RC・SRC事務所',50,'office']]],
+  ['設備・構築物', [['電気設備',15,'bolt','蓄電池を除く'],['給排水・ガス設備',15,'drop'],['冷暖房設備',13,'air','ダクト式・22kW以下'],
+            ['アスファルト舗装',10,'road'],['コンクリート舗装',15,'road'],['店用簡易装備',3,'shop'],['太陽光発電設備',17,'sun','売電用など']]],
+  ['車両・器具', [['普通自動車',6,'car'],['軽自動車',4,'car','軽トラを含む'],['貨物自動車',5,'truck','ダンプ・軽を除く'],
+            ['パソコン',4,'pc','サーバーを除く'],['エアコン',6,'air','壁掛けなど'],['冷蔵庫・洗濯機など',6,'fridge','電気機器'],['コピー機',5,'copier','複写機'],['バイク',3,'bike','2輪自動車']]],
+];
+const chipHTML = (n, y, ic, sub) => `<button type="button" class="chip" aria-pressed="false" data-p="${n}" data-y="${y}">
+  <svg viewBox="0 0 24 24" class="ic" aria-hidden="true">${ICONS[ic]}</svg>
+  <span class="cn">${n}</span>${sub ? `<span class="cs">${sub}</span>` : ''}
+  <span class="cy">${y}<i>年</i></span></button>`;
+
+// ================= 入力欄の共通処理 =================
+// 数字だけを受け付ける欄。日本語入力の変換中は触らない。
+function bindDigits(el, opt){
+  let composing = false, sticky = false;
+  const run = (ev) => {
+    const before = z2h(el.value);
+    const pos = el.selectionStart == null ? before.length : el.selectionStart;
+    const cut = before.search(/[.]/);
+    const body = cut >= 0 ? before.slice(0, cut) : before;
+    const bad = /[^0-9,，\s円]/.test(before);
+    let digits = body.replace(/[^0-9]/g, '').replace(/^0+(?=\d)/, '');
+    const over = digits.length > opt.max;
+    if (over) digits = digits.slice(0, opt.max);
+    const digitsBefore = z2h(el.value.slice(0, pos)).replace(/[^0-9]/g, '').length;
+    const out = opt.comma && digits ? Number(digits).toLocaleString('ja-JP') : digits;
+    if (out !== el.value) {
+      el.value = out;
+      let n = 0, p = 0;
+      while (p < out.length && n < digitsBefore) { if (/\d/.test(out[p])) n++; p++; }
+      try { el.setSelectionRange(p, p); } catch (e) {}
+    }
+    // 一度でも数字以外が入ったら、消し直すまで注意を出し続ける（「1234.5」→12345 の見落とし防止）
+    if (bad) sticky = true;
+    else if (!digits || (ev && /^delete/.test(ev.inputType || ''))) sticky = false;
+    if (opt.warn) {
+      const bad2 = bad || sticky;
+      opt.warn.textContent = bad2 ? (opt.msg || '数字以外（小数点・「万」・マイナスなど）は取り除きました。金額を確かめてください。') : over ? `${opt.max}桁までです。` : '';
+      opt.warn.classList.toggle('on', bad2 || over);
+    }
+  };
+  el.addEventListener('compositionstart', () => { composing = true; });
+  el.addEventListener('compositionend', () => { composing = false; run(); el.dispatchEvent(new Event('input', {bubbles: true})); });
+  el.addEventListener('input', e => { if (composing || e.isComposing) { e.stopPropagation(); return; } run(e); });
+  // カンマの直後で Backspace を押したときは、手前の数字を消す
+  if (opt.comma) el.addEventListener('keydown', e => {
+    const s = el.selectionStart, t = el.selectionEnd;
+    if (s !== t || s == null) return;
+    if (e.key === 'Backspace' && el.value[s - 1] === ',') el.setSelectionRange(s - 1, s - 1);
+    if (e.key === 'Delete' && el.value[s] === ',') el.setSelectionRange(s + 1, s + 1);
+  });
+}
+function press(list, on){ list.forEach(x => { const f = x === on; x.classList.toggle('on', f); x.setAttribute('aria-pressed', f); }); }
+
+// ================= 年分ボタン =================
+let armTimer = null;
+function setTarget(y){
+  $('#target').value = y;
+  document.querySelectorAll('#years button').forEach(b => {
+    const f = Number(b.dataset.y) === y;
+    b.classList.toggle('on', f); b.classList.remove('armed'); b.setAttribute('aria-pressed', f);
+  });
+  $('#thint').textContent = HINT0;
+  recalc();
+}
+(function(){
+  const box = $('#years');
+  YEAR_BTNS.forEach(y => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.dataset.y = y;
+    b.innerHTML = wareki(y).replace('年', '') + '<small>年分</small>';
+    b.addEventListener('click', () => {
+      if (y === DEFAULT_TARGET || Number($('#target').value) === y || b.classList.contains('armed')) { clearTimeout(armTimer); setTarget(y); return; }
+      box.querySelectorAll('button').forEach(x => x.classList.remove('armed'));
+      b.classList.add('armed');
+      $('#thint').textContent = wareki(y) + '分にするには、もう一度タップ';
+      clearTimeout(armTimer);
+      armTimer = setTimeout(() => { b.classList.remove('armed'); $('#thint').textContent = HINT0; }, 3000);
+    });
+    box.appendChild(b);
+  });
+})();
+
+// ================= 資産カード =================
+function addAsset(){
+  const el = document.createElement('div');
+  el.className = 'card asset';
+  el.innerHTML = `
+    <div class="ahead"><b data-out="title">資産</b><button type="button" class="del" data-act="del">削除</button></div>
+
+    <div class="lab"><span class="step">1</span>資産の種類 <span class="hint" style="color:var(--sub)">タップで耐用年数が入ります</span></div>
+    <div class="tabs" role="tablist">${PRESETS.map(([g], i) => `<button type="button" role="tab" data-tab="${i}" style="--g:var(--g${i})" class="${i ? '' : 'on'}" aria-selected="${!i}">${g}</button>`).join('')}</div>
+    ${PRESETS.map(([g, items], i) => `<div class="pg ${i ? '' : 'on'}" data-pane="${i}" style="--g:var(--g${i})">${items.map(x => chipHTML(...x)).join('')}</div>`).join('')}
+    <div class="links">
+        <a class="pdf" href="https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/pdf/2100_01.pdf" target="_blank" rel="noopener">国税庁の耐用年数表（PDF）を開く</a>
+      <button type="button" class="pdf" data-act="cap" aria-haspopup="dialog">資本的支出 or 修繕費を開く</button>
+    </div>
+    <input type="hidden" data-k="name" value="">
+
+    <div class="sec">
+      <div class="lab"><span class="step">2</span>取得（使い始めた）年月</div>
+      <div class="yr">
+        <select data-k="era" aria-label="元号"><option value="reiwa">令和</option><option value="heisei">平成</option><option value="showa">昭和</option></select>
+        <button type="button" class="stp" data-step="-1" aria-label="年を1つ戻す">－</button>
+        <input inputmode="numeric" data-k="yy" value="8" class="yy" aria-label="取得した年" autocomplete="off">
+        <span>年</span>
+        <button type="button" class="stp" data-step="1" aria-label="年を1つ進める">＋</button>
+        <span class="ymv" data-out="ym" aria-live="polite"></span>
+      </div>
+      <div class="fwarn" data-out="yywarn"></div>
+      <div class="months" role="group" aria-label="取得した月">${[1,2,3,4,5,6,7,8,9,10,11,12].map(m => `<button type="button" data-m="${m}" aria-pressed="false">${m}月</button>`).join('')}</div>
+      <input type="hidden" data-k="mm" value="">
+    </div>
+
+    <div class="sec">
+      <div class="lab"><span class="step">3</span>取得価額 <span class="hint" style="color:var(--sub)">土地を除く</span></div>
+      <div class="mwrap"><input inputmode="numeric" data-k="cost" class="money" aria-label="取得価額（円）" autocomplete="off"></div>
+      <div class="fwarn" data-out="costwarn"></div>
+    </div>
+
+    <div class="sec row2">
+      <div class="f"><label>耐用年数（年）</label><input inputmode="numeric" data-k="life" aria-label="耐用年数（年）" autocomplete="off"></div>
+      <div class="f"><label>事業専用割合（%）</label><input inputmode="decimal" data-k="ratio" value="100" aria-label="事業専用割合（%）" autocomplete="off"></div>
+    </div>
+    <label class="chk"><input type="checkbox" data-k="used"> 中古で買った資産（簡便法で耐用年数を計算）</label>
+    <div class="used">
+      <div class="row3">
+        <div class="f"><label>法定耐用年数</label><input inputmode="numeric" data-k="legal" aria-label="法定耐用年数（年）" autocomplete="off"></div>
+        <div class="f"><label>経過年数（年）</label><input inputmode="numeric" data-k="ey" aria-label="買った時点の経過年数（年）" autocomplete="off"></div>
+        <div class="f"><label>（か月）</label><input inputmode="numeric" data-k="em" aria-label="買った時点の経過月数" autocomplete="off"></div>
+      </div>
+      <div class="note">経過年数は、新築・新車から<b>買った時点まで</b>の年数です（買ってからの年数は含めません）。</div>
+      <div class="calc" data-out="used"></div>
+    </div>
+    <div class="res" data-out="res" aria-live="polite"></div>`;
+  $('#assets').appendChild(el);
+  const g = k => el.querySelector(`[data-k=${k}]`);
+
+  bindDigits(g('cost'), {max: 12, comma: true, warn: el.querySelector('[data-out=costwarn]')});
+  bindDigits(g('yy'), {max: 2, warn: el.querySelector('[data-out=yywarn]'), msg: '数字以外は取り除きました。年を確かめてください。'});
+  ['life', 'legal', 'ey', 'em'].forEach(k => bindDigits(g(k), {max: 3}));
+  el.addEventListener('input', recalc);
+
+  // 種類タブとチップ
+  el.querySelectorAll('[data-tab]').forEach(t => t.addEventListener('click', () => {
+    el.querySelectorAll('[data-tab]').forEach(x => { x.classList.toggle('on', x === t); x.setAttribute('aria-selected', x === t); });
+    el.querySelectorAll('[data-pane]').forEach(p => p.classList.toggle('on', p.dataset.pane === t.dataset.tab));
+  }));
+  const chips = [...el.querySelectorAll('.chip')];
+  chips.forEach(b => b.addEventListener('click', () => {
+    press(chips, b);
+    g('name').value = b.dataset.p;
+    g('legal').value = b.dataset.y;
+    if (!g('used').checked) g('life').value = b.dataset.y;
+    recalc();
+  }));
+  g('life').addEventListener('input', () => { if (!g('used').checked) { press(chips, null); g('name').value = ''; } });
+
+  // 年月
+  const months = [...el.querySelectorAll('[data-m]')];
+  months.forEach(b => b.addEventListener('click', () => { press(months, b); g('mm').value = b.dataset.m; recalc(); }));
+  el.querySelectorAll('[data-step]').forEach(b => b.addEventListener('click', () => {
+    const cur = int(g('yy').value), max = ERAS[g('era').value].max;
+    g('yy').value = isNaN(cur) ? 1 : Math.min(max, Math.max(1, cur + Number(b.dataset.step)));
+    recalc();
+  }));
+  // 元号を変えたら年と月を空に戻す（前の数字が残って年がずれるのを防ぐ）
+  g('era').addEventListener('change', () => { g('yy').value = ''; g('mm').value = ''; press(months, null); recalc(); g('yy').focus(); });
+  g('yy').addEventListener('focus', e => e.target.select());
+
+  // 中古
+  g('used').addEventListener('change', e => {
+    const on = e.target.checked;
+    el.querySelector('.used').classList.toggle('on', on);
+    if (on) { if (!g('legal').value && g('life').value) g('legal').value = g('life').value; }
+    else if (!isNaN(int(g('legal').value))) g('life').value = int(g('legal').value);   // 法定耐用年数に戻す
+    recalc();
+  });
+  el.querySelector('[data-act=cap]').addEventListener('click', e => openCap(e.currentTarget));
+  el.querySelector('[data-act=del]').addEventListener('click', () => {
+    el.remove();
+    if (!document.querySelector('#assets .asset')) addAsset(); else recalc();
+  });
+  recalc();
+  return el;
+}
+
+// ================= 再計算 =================
+let lastText = '', formRows = [], formPending = 0;
+function recalc(){
+  const target = Number($('#target').value), mode = 'ceil';
+  let tPrev = 0, tDep = 0, tExp = 0, tEnd = 0, ok = 0, pending = 0;
+  const lines = [wareki(target) + '分　未償却残高の計算（参考）'];
+  const fr = [];
+  const cards = [...document.querySelectorAll('#assets .asset')];
+  cards.forEach((el, i) => {
+    const g = k => el.querySelector(`[data-k=${k}]`);
+    const out = el.querySelector('[data-out=res]');
+    const label = '資産' + (i + 1);
+    el.querySelector('[data-out=title]').textContent = '資産 ' + (i + 1);
+    el.querySelector('[data-act=del]').style.visibility = cards.length > 1 || g('cost').value || g('mm').value ? 'visible' : 'hidden';
+    const name = g('name').value.trim();
+    const used = g('used').checked;
+    const fail = msg => { out.innerHTML = `<div class="err">${msg}</div>`; pending++; lines.push(`${label}${name ? ' ' + name : ''}：未計算（${msg}）`); };
+
+    // --- 中古資産 ---
+    g('life').readOnly = used;
+    let usedNote = '';
+    if (used) {
+      const uo = el.querySelector('[data-out=used]');
+      const L = int(g('legal').value), ey = g('ey').value === '' ? 0 : int(g('ey').value), em = g('em').value === '' ? 0 : int(g('em').value);
+      if (isNaN(L) || L < 2 || L > 100 || isNaN(ey) || isNaN(em)) {
+        uo.textContent = '法定耐用年数（2〜100年）と経過年数を入れてください。'; g('life').value = '';
+      } else {
+        const life = usedLife(L, ey, em);
+        uo.innerHTML = `法定${L}年 → 見積耐用年数 <b>${life}年</b>（${(ey * 12 + em) >= L * 12 ? '法定×20%' : '（法定−経過）＋経過×20%'}）`;
+        g('life').value = life; usedNote = `中古・法定${L}年→${life}年`;
+      }
+    }
+
+    // --- 入力の読み取り ---
+    const era = ERAS[g('era').value];
+    const yy = int(g('yy').value), useM = int(g('mm').value);
+    const cost = int(g('cost').value), life = int(g('life').value);
+    const useY = yy >= 1 ? era.base + yy : NaN;
+    const ymText = (yy >= 1 && useM) ? `${era.n}${yy}年${useM}月（${useY}年）` : (yy >= 1 ? `${era.n}${yy}年　月を選択` : '年を入力');
+    el.querySelector('[data-out=ym]').textContent = ymText;
+
+    const touched = g('cost').value || g('mm').value || g('life').value || used;
+    const need = [];
+    if (!(yy >= 1)) need.push('取得した年');
+    if (!useM) need.push('月');
+    if (!(cost > 0)) need.push('取得価額');
+    if (isNaN(life)) need.push(used ? '中古の法定耐用年数' : '資産の種類（または耐用年数）');
+    if (need.length) {
+      out.innerHTML = `<div class="pend">あと <b>${need.join('・')}</b> を入れると計算します。</div>`;
+      if (touched) { pending++; lines.push(`${label}${name ? ' ' + name : ''}：未計算（入力不足）`); }
+      return;
+    }
+
+    // --- 入力チェック ---
+    if (yy > era.max) return fail(`${era.n}は${era.max}年までです。元号と年を確かめてください。`);
+    if (useY > target) return fail(`取得年（${era.n}${yy}年）が、申告する年分（${wareki(target)}分）より後です。`);
+    if (life < 2) return fail('耐用年数は2年以上で入力してください。');
+    const rs = z2h(g('ratio').value).replace(/[%\s]/g, '');
+    const r = rs === '' ? 100 : (/^\d+(\.\d{1,2})?$/.test(rs) ? Number(rs) : NaN);
+    if (isNaN(r) || r < 0 || r > 100) return fail('事業専用割合は0〜100の数字で入力してください（小数は2位まで）。');
+
+    let s;
+    try { s = schedule({cost, acqDate: new Date(useY, useM - 1, 1), useY, useM, life}, target, mode); }
+    catch (e) { return fail(e.message); }
+
+    const cur = s.rows[s.rows.length - 1];
+    const isNew = useY === target;                      // 本年中の取得
+    const prevEnd = isNew ? 0 : cur.begin;
+    const exp = rnd(cur.dep * Math.round(r * 100), 10000, 'floor');
+    tPrev += prevEnd; tDep += cur.dep; tExp += exp; tEnd += cur.end; ok++;
+
+    const method = s.old ? '旧定額法' : '定額法';
+    const rateTxt = '0.' + String(s.rate).padStart(3, '0');
+    const nth = target - useY + 1;
+    const badges = [`<span class="badge">${method}</span>`];
+    if (usedNote) badges.push('<span class="badge">中古</span>');
+    if (cur.kind === 'equal') badges.push('<span class="badge hot">5年均等償却</span>');
+    if (isNew) badges.push('<span class="badge hot">本年中の取得</span>');
+    if (cur.begin <= 1) badges.push('<span class="badge hot">償却済み（残1円）</span>');
+    const basis = cur.kind === 'equal' ? `均等償却（年 ${yen(Math.ceil((s.floorBV - 1) / 5 - 1e-9))}）`
+                : s.old ? `${yen(Math.floor(cost * 9 / 10))}（取得価額×90%）` : `${yen(cost)}（取得価額）`;
+    const warns = [];
+    if (isNew) warns.push('本年中に取得した資産です。前年末の残高はなく、償却費は使い始めた月からの月割りです。過去に取得した資産なら、取得した年を直してください。');
+    if (cost < 400000) warns.push('取得価額が40万円未満です。取得した年に全額経費（少額の特例）や一括償却にしていれば、残高はありません。');
+    if (cur.kind === 'none') warns.push('95%まで償却済みで、5年均等償却は平成20年分から始まります。');
+
+    out.innerHTML = `
+      <div class="rbox">
+        <div class="rhead"><span>${name || label}　${era.n}${yy}年${useM}月取得・${nth}年目</span>${badges.join('')}</div>
+        <div class="rmain"><span>前年末（${wareki(target - 1)}末）の未償却残高</span>
+          ${isNew ? '<strong class="na">なし（本年中の取得）</strong>' : `<strong class="num">${yen(prevEnd)}</strong>`}</div>
+        <div class="kv">
+          <div><span>本年分 償却費（${cur.m}/12）</span><strong>${yen(cur.dep)}</strong></div>
+          <div><span>必要経費算入額（${r}%）</span><strong>${yen(exp)}</strong></div>
+          <div><span>本年末 未償却残高</span><strong>${yen(cur.end)}</strong></div>
+        </div>
+        ${warns.map(w => `<div class="rwarn">${w}</div>`).join('')}
+        <div class="tk"><span>取得価額 <b>${yen(cost)}</b></span><span>償却の基礎 <b>${basis}</b></span><span>償却率 <b>${rateTxt}</b></span><span>耐用年数 <b>${life}年</b>${usedNote ? '（' + usedNote + '）' : ''}</span><span>本年中の償却期間 <b>${cur.m}/12</b></span></div>
+        <details class="hist"><summary>年ごとの推移を見る（${s.rows.length}年分）</summary><div class="tblwrap"><table>
+          <tr><th>年分</th><th>備考</th><th>期首残高</th><th>償却費</th><th>期末残高</th></tr>
+          ${s.rows.map(x => `<tr class="${x.y === target ? 'cur' : ''}"><td>${wareki(x.y)}</td><td>${x.note}</td><td>${x.begin.toLocaleString()}</td><td>${x.dep.toLocaleString()}</td><td>${x.end.toLocaleString()}</td></tr>`).join('')}
+        </table></div></details>
+      </div>`;
+    const memo = [cur.kind === 'equal' ? '均等償却' : '', usedNote ? '中古' : ''].filter(Boolean).join('・');
+    fr.push({name: name || label, ym: `${eraShort(useY)}・${useM}`, cost,
+      basis: cur.kind === 'equal' ? s.floorBV : (s.old ? Math.floor(cost * 9 / 10) : cost),
+      method: s.old ? '旧定額' : '定額', life, rate: cur.kind === 'equal' ? '−' : rateTxt,
+      months: `${cur.kind === 'none' ? 0 : cur.m}/12`, dep: cur.dep, ratio: r + '%', exp, end: cur.end, memo});
+    lines.push(`${label}${name ? ' ' + name : ''}：${era.n}${yy}年${useM}月取得／取得価額 ${yen(cost)}／${method}・耐用${life}年${usedNote ? '（' + usedNote + '）' : ''}・償却率${rateTxt}`
+      + `／前年末残高 ${isNew ? 'なし（本年取得）' : yen(prevEnd)}／本年償却費 ${yen(cur.dep)}（${cur.m}/12${cur.kind === 'equal' ? '・均等償却' : ''}）／経費算入 ${yen(exp)}（${r}%）／本年末残高 ${yen(cur.end)}`);
+  });
+  lines.push(`合計（計算済み${ok}件${pending ? '・未計算' + pending + '件を除く' : ''}）：前年末残高 ${yen(tPrev)}／本年償却費 ${yen(tDep)}／経費算入 ${yen(tExp)}／本年末残高 ${yen(tEnd)}`);
+  lastText = lines.join('\n'); formRows = fr; formPending = pending;
+
+  $('#bYear').textContent = wareki(target) + '分';
+  $('#bYear').classList.toggle('alt', target !== DEFAULT_TARGET);
+  $('#bCount').textContent = `計算済み ${ok}件`;
+  $('#bWarn').textContent = pending ? `⚠ 未計算 ${pending}件` : '';
+  $('#bar').classList.toggle('warn', pending > 0);
+  $('#bPrev').textContent = yen(tPrev); $('#bDep').textContent = yen(tDep); $('#bExp').textContent = yen(tExp); $('#bEnd').textContent = yen(tEnd);
+}
+
+// ================= 決算書（減価償却費の計算） =================
+const eraShort = y => y >= 2019 ? '令' + (y - 2018) : y >= 1989 ? '平' + (y - 1988) : '昭' + (y - 1925);
+const nf = v => v === '' || v == null ? '' : Number(v).toLocaleString('ja-JP');
+function openForm(){
+  const target = Number($('#target').value);
+  const rows = formRows;
+  const sum = k => rows.reduce((a, r) => a + (r[k] || 0), 0);
+  const td = (v, cls = '') => `<td class="${cls}">${v}</td>`;
+  $('#fTitle').textContent = `${wareki(target)}分 青色申告決算書　○減価償却費の計算`;
+  $('#fBody').innerHTML = rows.length ? rows.map(r => `<tr>
+      ${td(r.name, 'l')}${td('', 'c')}${td(r.ym, 'c')}${td(nf(r.cost))}${td(nf(r.basis))}${td(r.method, 'c')}${td(r.life, 'c')}${td(r.rate, 'c')}${td(r.months, 'c')}
+      ${td(nf(r.dep))}${td('')}${td(nf(r.dep))}${td(r.ratio, 'c')}${td(nf(r.exp))}${td(nf(r.end))}${td(r.memo, 'l')}</tr>`).join('')
+    : `<tr><td colspan="16" class="c" style="padding:18px">計算済みの資産がありません</td></tr>`;
+  $('#fFoot').innerHTML = `<tr class="sum"><td class="l">計</td><td colspan="8"></td>${td(nf(sum('dep')))}<td></td>${td(nf(sum('dep')))}<td></td>${td(nf(sum('exp')))}${td(nf(sum('end')))}<td></td></tr>`;
+  $('#fNote').textContent = formPending ? `⚠ 未計算の資産が${formPending}件あります（この表には入っていません）。` : '';
+  $('#fNote').style.display = formPending ? 'block' : 'none';
+  $('#form').classList.add('on'); document.body.style.overflow = 'hidden';
+  $('#fClose').focus();
+}
+function closeForm(){ $('#form').classList.remove('on'); document.body.style.overflow = ''; $('#copy').focus(); }
+$('#copy').addEventListener('click', openForm);
+$('#fClose').addEventListener('click', closeForm);
+$('#form').addEventListener('click', e => { if (e.target.id === 'form') closeForm(); });
+let capFrom = null;
+function openCap(btn){ capFrom = btn; $('#cap').classList.add('on'); document.body.style.overflow = 'hidden'; $('#capClose').focus(); }
+function closeCap(){ $('#cap').classList.remove('on'); document.body.style.overflow = ''; if (capFrom) capFrom.focus(); }
+$('#capClose').addEventListener('click', closeCap);
+$('#cap').addEventListener('click', e => { if (e.target.id === 'cap') closeCap(); });
+document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; if ($('#cap').classList.contains('on')) closeCap(); else if ($('#form').classList.contains('on')) closeForm(); });
+
+// ================= クリア／元に戻す =================
+let undoState = null, undoTimer = null;
+$('#clear').addEventListener('click', () => {
+  const box = $('#assets');
+  undoState = {nodes: [...box.children], target: Number($('#target').value)};
+  box.replaceChildren();
+  clearTimeout(armTimer);
+  setTarget(DEFAULT_TARGET);
+  addAsset();
+  window.scrollTo({top: 0, behavior: 'smooth'});
+  $('#undo').classList.add('on');
+  clearTimeout(undoTimer);
+  undoTimer = setTimeout(() => { $('#undo').classList.remove('on'); undoState = null; }, 8000);
+});
+$('#undoBtn').addEventListener('click', () => {
+  if (!undoState) return;
+  $('#assets').replaceChildren(...undoState.nodes);
+  setTarget(undoState.target);
+  undoState = null; clearTimeout(undoTimer); $('#undo').classList.remove('on');
+});
+
+$('#add').addEventListener('click', () => { const el = addAsset(); el.scrollIntoView({behavior: 'smooth', block: 'start'}); });
+$('#target').value = DEFAULT_TARGET;
+addAsset();
+setTarget(DEFAULT_TARGET);
+</script>
+</body>
+</html>

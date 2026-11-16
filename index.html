@@ -197,6 +197,9 @@ tr.cur td{background:var(--accent-bg);font-weight:bold}
 .paper tbody td:first-child,.paper tfoot td:first-child{position:sticky;left:0;background:#fbfdf9;z-index:1;box-shadow:2px 0 0 #c5dccb}
 .paper thead th:first-child{position:sticky;left:0;z-index:2}
 @media (prefers-color-scheme:dark){.paper tbody td:first-child,.paper tfoot td:first-child{background:#151c17;box-shadow:2px 0 0 #36513f}}
+.paper .red{color:#c62828;font-weight:bold}
+@media (prefers-color-scheme:dark){.paper .red{color:#ff8a80}}
+.paper th small.red{font-weight:bold;font-size:9.5px}
 .paper tr.sum td{font-weight:bold;background:rgba(42,107,61,.08)}
 .snote{font-size:11.5px;color:var(--sub);margin-top:8px}
 /* 資本的支出と修繕費のフロー */
@@ -308,7 +311,7 @@ tr.cur td{background:var(--accent-bg);font-weight:bold}
           <th>㋠<br>事業専用<br>割合</th>
           <th>㋷<br>本年分の必要<br>経費算入額<small>（㋣×㋠）</small></th>
           <th>㋦<br>未償却残高<small>（期末残高）</small></th>
-          <th style="min-width:70px">摘要</th>
+          <th style="min-width:96px">摘要<small class="red">（前年末未償却残高）</small></th>
         </tr></thead>
         <tbody id="fBody"></tbody><tfoot id="fFoot"></tfoot>
       </table></div>
@@ -769,7 +772,7 @@ function recalc(){
     fr.push({name: name || label, ym: `${eraShort(useY)}・${useM}`, cost,
       basis: cur.kind === 'equal' ? s.floorBV : (s.old ? Math.floor(cost * 9 / 10) : cost),
       method: s.old ? '旧定額' : '定額', life, rate: cur.kind === 'equal' ? '−' : rateTxt,
-      months: `${cur.kind === 'none' ? 0 : cur.m}/12`, dep: cur.dep, ratio: r + '%', exp, end: cur.end, memo});
+      months: `${cur.kind === 'none' ? 0 : cur.m}/12`, dep: cur.dep, ratio: r + '%', exp, end: cur.end, memo, prev: isNew ? null : prevEnd});
     lines.push(`${label}${name ? ' ' + name : ''}：${era.n}${yy}年${useM}月取得／取得価額 ${yen(cost)}／${method}・耐用${life}年${usedNote ? '（' + usedNote + '）' : ''}・償却率${rateTxt}`
       + `／前年末残高 ${isNew ? 'なし（本年取得）' : yen(prevEnd)}／本年償却費 ${yen(cur.dep)}（${cur.m}/12${cur.kind === 'equal' ? '・均等償却' : ''}）／経費算入 ${yen(exp)}（${r}%）／本年末残高 ${yen(cur.end)}`);
   });
@@ -795,9 +798,9 @@ function openForm(){
   $('#fTitle').textContent = `${wareki(target)}分 青色申告決算書　○減価償却費の計算`;
   $('#fBody').innerHTML = rows.length ? rows.map(r => `<tr>
       ${td(r.name, 'l')}${td('', 'c')}${td(r.ym, 'c')}${td(nf(r.cost))}${td(nf(r.basis))}${td(r.method, 'c')}${td(r.life, 'c')}${td(r.rate, 'c')}${td(r.months, 'c')}
-      ${td(nf(r.dep))}${td('')}${td(nf(r.dep))}${td(r.ratio, 'c')}${td(nf(r.exp))}${td(nf(r.end))}${td(r.memo, 'l')}</tr>`).join('')
+      ${td(nf(r.dep))}${td('')}${td(nf(r.dep))}${td(r.ratio, 'c')}${td(nf(r.exp))}${td(nf(r.end))}${td((r.memo ? r.memo + '<br>' : '') + '<span class="red">' + (r.prev == null ? '（本年取得）' : '（' + nf(r.prev) + '）') + '</span>', 'l')}</tr>`).join('')
     : `<tr><td colspan="16" class="c" style="padding:18px">計算済みの資産がありません</td></tr>`;
-  $('#fFoot').innerHTML = `<tr class="sum"><td class="l">計</td><td colspan="8"></td>${td(nf(sum('dep')))}<td></td>${td(nf(sum('dep')))}<td></td>${td(nf(sum('exp')))}${td(nf(sum('end')))}<td></td></tr>`;
+  $('#fFoot').innerHTML = ''; void `<tr class="sum"><td class="l">計</td><td colspan="8"></td>${td(nf(sum('dep')))}<td></td>${td(nf(sum('dep')))}<td></td>${td(nf(sum('exp')))}${td(nf(sum('end')))}<td></td></tr>`;
   $('#fNote').textContent = formPending ? `⚠ 未計算の資産が${formPending}件あります（この表には入っていません）。` : '';
   $('#fNote').style.display = formPending ? 'block' : 'none';
   $('#form').classList.add('on'); document.body.style.overflow = 'hidden';

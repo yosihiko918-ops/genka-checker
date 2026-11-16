@@ -88,10 +88,23 @@ input[readonly]{background:var(--soft);color:var(--sub)}
 button.pdf{font-weight:normal}
 .pdf{display:inline-flex;align-items:center;gap:6px;margin-top:9px;min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;color:var(--accent);text-decoration:none;font-size:13px;background:var(--card)}
 
-.yr{display:flex;align-items:center;gap:6px}
-.yr select{width:auto;font-weight:bold}
-.yr .yy{width:68px;text-align:center;font-size:19px;font-weight:bold}
-.stp{width:46px;padding:0;font-size:19px}
+.ymrow{display:grid;grid-template-columns:minmax(128px,40%) 1fr;gap:10px;align-items:start}
+.wheel{position:relative;height:132px;overflow-y:auto;scroll-snap-type:y mandatory;overscroll-behavior:contain;border:1px solid var(--line);border-radius:12px;background:var(--card);scrollbar-width:none;-webkit-overflow-scrolling:touch;
+  -webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,.25) 0,#000 32%,#000 68%,rgba(0,0,0,.25) 100%);mask-image:linear-gradient(180deg,rgba(0,0,0,.25) 0,#000 32%,#000 68%,rgba(0,0,0,.25) 100%)}
+.wheel::-webkit-scrollbar{display:none}
+.wheel:focus-visible{outline:3px solid var(--accent-2);outline-offset:2px}
+.wpad{height:44px}
+.wi{height:44px;scroll-snap-align:center;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;color:var(--sub);transition:color .15s,transform .15s}
+.wi b{font-size:15px;font-weight:bold}
+.wi b i{font-style:normal;font-size:9.5px;font-weight:normal;margin-left:3px}
+.wi small{font-size:10.5px}
+.wi.near{color:var(--on)}
+.wi.near small{opacity:.85}
+.wheel::before{content:"";position:sticky;display:block;top:44px;height:44px;margin-bottom:-44px;background:var(--accent);border-radius:9px;margin-left:5px;margin-right:5px;z-index:0;pointer-events:none}
+.wi{position:relative;z-index:1}
+.ymrow .months{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:0}
+.ymrow .months button{min-height:40px;padding:0;font-size:13.5px;white-space:nowrap}
+@media (max-width:359px){.ymrow{grid-template-columns:118px 1fr;gap:7px}.ymrow .months{gap:4px}.ymrow .months button{font-size:12px}.wi b{font-size:13.5px}.wi small{display:none}}
 .ymv{margin-left:auto;font-size:13px;font-weight:bold;color:var(--accent);text-align:right}
 .months{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:8px}
 .months button{padding:0;min-height:46px;font-weight:bold}
@@ -149,14 +162,16 @@ tr.cur td{background:var(--accent-bg);font-weight:bold}
 .by{background:var(--accent);color:var(--on);font-weight:bold;border-radius:20px;padding:2px 10px;font-size:12px;white-space:nowrap}
 .by.alt{background:var(--warn-line);color:#201204}
 .bw{color:var(--warn);font-weight:bold;white-space:nowrap}
-.bvs{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,1fr);gap:4px 10px}
-@media (min-width:480px){.bvs{grid-template-columns:repeat(4,1fr);gap:6px}}
-.bv{display:flex;align-items:baseline;justify-content:space-between;gap:6px}
-@media (min-width:480px){.bv{display:block}}
+.bvs{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:5px 8px}
+@media (min-width:480px){.bvs{grid-template-columns:minmax(max-content,1.5fr) 1fr 1fr 1fr;gap:10px;align-items:center}}
+.bv{display:block}
 .bv span{display:block;font-size:10.5px;color:var(--sub);line-height:1.2}
 .bv{min-width:0}
-.bv b{font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap}
-.bv.m b{color:var(--accent);font-size:17px}
+.bv b{font-size:14px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.bv.m{grid-column:1/-1;background:var(--accent);border-radius:12px;padding:7px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.bv.m span{color:var(--on);font-size:12px;font-weight:bold;opacity:.9}
+.bv.m b{color:var(--on);font-size:24px;line-height:1.15}
+@media (min-width:480px){.bv.m{grid-column:auto;padding:6px 14px;display:block}.bv.m b{font-size:22px}}
 .copy{min-height:36px;padding:4px 12px;font-size:12.5px;font-weight:bold;color:var(--accent);border-color:var(--accent)}
 .copy.done{background:var(--ok);border-color:var(--ok);color:var(--on)}
 @media (min-width:640px){.bin{grid-template-columns:auto 1fr auto}.bvs{grid-column:auto;grid-row:1;grid-column:2}.copy{grid-column:3}}
@@ -215,14 +230,14 @@ tr.cur td{background:var(--accent-bg);font-weight:bold}
 #fNote{display:none;color:var(--warn);background:var(--warn-bg);border-radius:8px;padding:6px 10px;font-size:12.5px;margin-bottom:8px}
 
 
-@media (max-width:359px){.kv strong{font-size:13.5px}.bv b{font-size:14px}.bv.m b{font-size:15px}.rmain strong{font-size:26px}}
+@media (max-width:359px){.kv strong{font-size:13.5px}.bv b{font-size:12px}.bv span{font-size:9.5px}.bv.m b{font-size:21px}.rmain strong{font-size:26px}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="top">
     <div class="logo" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8.5 7.5h7M8.5 12h2M13.5 12h2M8.5 16h2M13.5 16h2"/></svg></div>
-    <h1>減価償却 残高チェッカー<small>定額法・旧定額法／参考計算（入力は保存されません）</small></h1>
+    <h1>減価償却 残高チェッカー<small>定額法・旧定額法</small></h1>
     <button id="clear" class="clear" type="button">クリア</button>
   </div>
   <div class="undo" id="undo" role="status"><span>クリアしました</span><button type="button" id="undoBtn">元に戻す</button></div>
@@ -235,7 +250,6 @@ tr.cur td{background:var(--accent-bg);font-weight:bold}
   </div>
 
   <div id="assets"></div>
-  <button id="add" class="add" type="button">＋ 資産を追加</button>
 
   <details class="card fold" style="margin-top:14px">
     <summary>このツールで計算できない資産（タップで開く）</summary>
@@ -255,7 +269,7 @@ tr.cur td{background:var(--accent-bg);font-weight:bold}
       <li>事業専用割合は「必要経費算入額」だけに反映し、未償却残高は償却費の全額で減らします。</li>
       <li>中古資産の簡便法：法定耐用年数を全部経過→法定×20%、一部経過→（法定−経過）＋経過×20%。1年未満切捨て、2年未満は2年。購入後の改良費が取得価額の50%を超える場合は使えません。</li>
       <li>耐用年数の目安：金属造（鉄骨）は骨格材の肉厚で判定します。車両は一般用の年数で、運送業用などは別です。太陽光発電設備の17年は売電用などの場合で、製造業の自家消費などは業種の設備の年数になります。</li>
-      <li>資本的支出（平成19年4月以後）は、別の資産として1件追加してください。</li>
+      <li>資本的支出（平成19年4月以後）は、本体とは別の資産として計算してください。</li>
       <li>取得価額が40万円未満の資産は、取得した年に少額の特例や一括償却を使っていないか確認してください（使っていれば残高はありません）。</li>
     </ul>
   </details>
@@ -339,7 +353,7 @@ tr.cur td{background:var(--accent-bg);font-weight:bold}
         </ol>
         <div class="fnote">各質問で「いいえ」なら、次の番号へ進みます。<br>（注）「前年末取得価額」とは、原則として前年12月31日に有する固定資産の最初の取得価額に、既にその固定資産につき支出された資本的支出の額を加算したものです。</div>
       </div>
-      <div class="snote">資本的支出になった部分は、別の資産として1件追加してください（平成19年4月以後の支出）。</div>
+      <div class="snote">資本的支出になった部分は、本体とは別の資産として計算します（平成19年4月以後の支出）。</div>
     </div>
   </div>
 </div>
@@ -349,7 +363,7 @@ tr.cur td{background:var(--accent-bg);font-weight:bold}
 const DEFAULT_TARGET = 2026;                       // 既定の申告年分（令和8年分）
 const YEAR_BTNS = [2026, 2025, 2024, 2023, 2022];  // 年分ボタン（左が既定）
 const ERAS = {reiwa:{n:'令和',base:2018,max:99}, heisei:{n:'平成',base:1988,max:31}, showa:{n:'昭和',base:1925,max:64}};
-const HINT0 = '令和8年分以外は2回タップで選択';
+const HINT0 = '';
 
 // ================= 償却率 =================
 // 定額法（H19.4.1以後取得）：別表第八 = 1/n の小数点以下3位未満切上げ（1000分率）
@@ -494,6 +508,17 @@ function bindDigits(el, opt){
 }
 function press(list, on){ list.forEach(x => { const f = x === on; x.classList.toggle('on', f); x.setAttribute('aria-pressed', f); }); }
 
+// ================= 年のホイール =================
+const DEFAULT_ACQ = 2026;                 // 取得年の初期表示（令和8年）
+const WHEEL_YEARS = []; for (let y = 1955; y <= 2026; y++) WHEEL_YEARS.push(y);   // 昭和30年〜令和8年
+const WH = 44;                            // 1行の高さ(px)
+function toWareki(y){ return y >= 2019 ? {era:'reiwa', yy:y - 2018} : y >= 1989 ? {era:'heisei', yy:y - 1988} : {era:'showa', yy:y - 1925}; }
+function wlabel(y){
+  if (y === 2019) return '令和元年<i>平成31</i>';
+  if (y === 1989) return '平成元年<i>昭和64</i>';
+  return wareki(y);
+}
+
 // ================= 年分ボタン =================
 let armTimer = null;
 function setTarget(y){
@@ -528,9 +553,9 @@ function addAsset(){
   const el = document.createElement('div');
   el.className = 'card asset';
   el.innerHTML = `
-    <div class="ahead"><b data-out="title">資産</b><button type="button" class="del" data-act="del">削除</button></div>
+    <b data-out="title" hidden></b><button type="button" data-act="del" hidden></button>
 
-    <div class="lab"><span class="step">1</span>資産の種類 <span class="hint" style="color:var(--sub)">タップで耐用年数が入ります</span></div>
+    <div class="lab"><span class="step">1</span>資産の種類</div>
     <div class="tabs" role="tablist">${PRESETS.map(([g], i) => `<button type="button" role="tab" data-tab="${i}" style="--g:var(--g${i})" class="${i ? '' : 'on'}" aria-selected="${!i}">${g}</button>`).join('')}</div>
     ${PRESETS.map(([g, items], i) => `<div class="pg ${i ? '' : 'on'}" data-pane="${i}" style="--g:var(--g${i})">${items.map(x => chipHTML(...x)).join('')}</div>`).join('')}
     <div class="links">
@@ -540,17 +565,14 @@ function addAsset(){
     <input type="hidden" data-k="name" value="">
 
     <div class="sec">
-      <div class="lab"><span class="step">2</span>取得（使い始めた）年月</div>
-      <div class="yr">
-        <select data-k="era" aria-label="元号"><option value="reiwa">令和</option><option value="heisei">平成</option><option value="showa">昭和</option></select>
-        <button type="button" class="stp" data-step="-1" aria-label="年を1つ戻す">－</button>
-        <input inputmode="numeric" data-k="yy" value="8" class="yy" aria-label="取得した年" autocomplete="off">
-        <span>年</span>
-        <button type="button" class="stp" data-step="1" aria-label="年を1つ進める">＋</button>
-        <span class="ymv" data-out="ym" aria-live="polite"></span>
+      <div class="lab"><span class="step">2</span>取得年月</div>
+      <div class="ymrow">
+        <div class="wheel" tabindex="0" role="listbox" aria-label="取得した年（上下にスワイプ）" data-wheel>
+          <div class="wpad"></div>${WHEEL_YEARS.map(y => `<div class="wi" role="option" data-wy="${y}"><b>${wlabel(y)}</b><small>${y}</small></div>`).join('')}<div class="wpad"></div>
+        </div>
+        <div class="months" role="group" aria-label="取得した月">${[1,2,3,4,5,6,7,8,9,10,11,12].map(m => `<button type="button" data-m="${m}" aria-pressed="false">${m}月</button>`).join('')}</div>
       </div>
-      <div class="fwarn" data-out="yywarn"></div>
-      <div class="months" role="group" aria-label="取得した月">${[1,2,3,4,5,6,7,8,9,10,11,12].map(m => `<button type="button" data-m="${m}" aria-pressed="false">${m}月</button>`).join('')}</div>
+      <input type="hidden" data-k="era" value="reiwa"><input type="hidden" data-k="yy" value="8"><span data-out="ym" hidden></span>
       <input type="hidden" data-k="mm" value="">
     </div>
 
@@ -579,7 +601,6 @@ function addAsset(){
   const g = k => el.querySelector(`[data-k=${k}]`);
 
   bindDigits(g('cost'), {max: 12, comma: true, warn: el.querySelector('[data-out=costwarn]')});
-  bindDigits(g('yy'), {max: 2, warn: el.querySelector('[data-out=yywarn]'), msg: '数字以外は取り除きました。年を確かめてください。'});
   ['life', 'legal', 'ey', 'em'].forEach(k => bindDigits(g(k), {max: 3}));
   el.addEventListener('input', recalc);
 
@@ -601,14 +622,31 @@ function addAsset(){
   // 年月
   const months = [...el.querySelectorAll('[data-m]')];
   months.forEach(b => b.addEventListener('click', () => { press(months, b); g('mm').value = b.dataset.m; recalc(); }));
-  el.querySelectorAll('[data-step]').forEach(b => b.addEventListener('click', () => {
-    const cur = int(g('yy').value), max = ERAS[g('era').value].max;
-    g('yy').value = isNaN(cur) ? 1 : Math.min(max, Math.max(1, cur + Number(b.dataset.step)));
+  // 年のホイール（上下スワイプで選択）
+  const wheel = el.querySelector('[data-wheel]'), items = [...wheel.querySelectorAll('.wi')];
+  let wTimer = null;
+  const setYear = (y, scroll) => {
+    const w = toWareki(y);
+    g('era').value = w.era; g('yy').value = w.yy;
+    items.forEach(it => { const f = Number(it.dataset.wy) === y; it.classList.toggle('on', f); it.classList.toggle('near', f); it.setAttribute('aria-selected', f); });
+    if (scroll) wheel.scrollTo({top: WHEEL_YEARS.indexOf(y) * WH, behavior: scroll === 'smooth' ? 'smooth' : 'auto'});
     recalc();
-  }));
-  // 元号を変えたら年と月を空に戻す（前の数字が残って年がずれるのを防ぐ）
-  g('era').addEventListener('change', () => { g('yy').value = ''; g('mm').value = ''; press(months, null); recalc(); g('yy').focus(); });
-  g('yy').addEventListener('focus', e => e.target.select());
+  };
+  wheel.addEventListener('scroll', () => {
+    const i = Math.max(0, Math.min(items.length - 1, Math.round(wheel.scrollTop / WH)));
+    items.forEach((it, k) => it.classList.toggle('near', k === i));
+    clearTimeout(wTimer);
+    wTimer = setTimeout(() => { const y = WHEEL_YEARS[i]; if (int(g('yy').value) !== toWareki(y).yy || g('era').value !== toWareki(y).era) setYear(y); }, 90);
+  }, {passive: true});
+  items.forEach(it => it.addEventListener('click', () => setYear(Number(it.dataset.wy), 'smooth')));
+  wheel.addEventListener('keydown', e => {
+    const cur = WHEEL_YEARS.indexOf(ERAS[g('era').value].base + int(g('yy').value));
+    const d = e.key === 'ArrowUp' ? -1 : e.key === 'ArrowDown' ? 1 : 0;
+    if (!d) return; e.preventDefault();
+    setYear(WHEEL_YEARS[Math.max(0, Math.min(WHEEL_YEARS.length - 1, cur + d))], 'smooth');
+  });
+  el._syncWheel = () => { const y = ERAS[g('era').value].base + int(g('yy').value); wheel.scrollTop = WHEEL_YEARS.indexOf(y) * WH; };
+  requestAnimationFrame(() => setYear(DEFAULT_ACQ, true));
 
   // 中古
   g('used').addEventListener('change', e => {
@@ -640,7 +678,6 @@ function recalc(){
     const out = el.querySelector('[data-out=res]');
     const label = '資産' + (i + 1);
     el.querySelector('[data-out=title]').textContent = '資産 ' + (i + 1);
-    el.querySelector('[data-act=del]').style.visibility = cards.length > 1 || g('cost').value || g('mm').value ? 'visible' : 'hidden';
     const name = g('name').value.trim();
     const used = g('used').checked;
     const fail = msg => { out.innerHTML = `<div class="err">${msg}</div>`; pending++; lines.push(`${label}${name ? ' ' + name : ''}：未計算（${msg}）`); };
@@ -675,8 +712,7 @@ function recalc(){
     if (!(cost > 0)) need.push('取得価額');
     if (isNaN(life)) need.push(used ? '中古の法定耐用年数' : '資産の種類（または耐用年数）');
     if (need.length) {
-      out.innerHTML = `<div class="pend">あと <b>${need.join('・')}</b> を入れると計算します。</div>`;
-      if (touched) { pending++; lines.push(`${label}${name ? ' ' + name : ''}：未計算（入力不足）`); }
+      out.innerHTML = '';
       return;
     }
 
@@ -709,8 +745,8 @@ function recalc(){
     const basis = cur.kind === 'equal' ? `均等償却（年 ${yen(Math.ceil((s.floorBV - 1) / 5 - 1e-9))}）`
                 : s.old ? `${yen(Math.floor(cost * 9 / 10))}（取得価額×90%）` : `${yen(cost)}（取得価額）`;
     const warns = [];
-    if (isNew) warns.push('本年中に取得した資産です。前年末の残高はなく、償却費は使い始めた月からの月割りです。過去に取得した資産なら、取得した年を直してください。');
-    if (cost < 400000) warns.push('取得価額が40万円未満です。取得した年に全額経費（少額の特例）や一括償却にしていれば、残高はありません。');
+    if (isNew) warns.push('本年中の取得です。過去の取得なら年を直してください。');
+    if (cost < 400000) warns.push('40万円未満：少額特例・一括償却を使っていれば残高はありません。');
     if (cur.kind === 'none') warns.push('95%まで償却済みで、5年均等償却は平成20年分から始まります。');
 
     out.innerHTML = `
@@ -724,7 +760,6 @@ function recalc(){
           <div><span>本年末 未償却残高</span><strong>${yen(cur.end)}</strong></div>
         </div>
         ${warns.map(w => `<div class="rwarn">${w}</div>`).join('')}
-        <div class="tk"><span>取得価額 <b>${yen(cost)}</b></span><span>償却の基礎 <b>${basis}</b></span><span>償却率 <b>${rateTxt}</b></span><span>耐用年数 <b>${life}年</b>${usedNote ? '（' + usedNote + '）' : ''}</span><span>本年中の償却期間 <b>${cur.m}/12</b></span></div>
         <details class="hist"><summary>年ごとの推移を見る（${s.rows.length}年分）</summary><div class="tblwrap"><table>
           <tr><th>年分</th><th>備考</th><th>期首残高</th><th>償却費</th><th>期末残高</th></tr>
           ${s.rows.map(x => `<tr class="${x.y === target ? 'cur' : ''}"><td>${wareki(x.y)}</td><td>${x.note}</td><td>${x.begin.toLocaleString()}</td><td>${x.dep.toLocaleString()}</td><td>${x.end.toLocaleString()}</td></tr>`).join('')}
@@ -743,7 +778,7 @@ function recalc(){
 
   $('#bYear').textContent = wareki(target) + '分';
   $('#bYear').classList.toggle('alt', target !== DEFAULT_TARGET);
-  $('#bCount').textContent = `計算済み ${ok}件`;
+  $('#bCount').textContent = '';
   $('#bWarn').textContent = pending ? `⚠ 未計算 ${pending}件` : '';
   $('#bar').classList.toggle('warn', pending > 0);
   $('#bPrev').textContent = yen(tPrev); $('#bDep').textContent = yen(tDep); $('#bExp').textContent = yen(tExp); $('#bEnd').textContent = yen(tEnd);
@@ -796,11 +831,11 @@ $('#clear').addEventListener('click', () => {
 $('#undoBtn').addEventListener('click', () => {
   if (!undoState) return;
   $('#assets').replaceChildren(...undoState.nodes);
+  document.querySelectorAll('#assets .asset').forEach(c => c._syncWheel && c._syncWheel());
   setTarget(undoState.target);
   undoState = null; clearTimeout(undoTimer); $('#undo').classList.remove('on');
 });
 
-$('#add').addEventListener('click', () => { const el = addAsset(); el.scrollIntoView({behavior: 'smooth', block: 'start'}); });
 $('#target').value = DEFAULT_TARGET;
 addAsset();
 setTarget(DEFAULT_TARGET);

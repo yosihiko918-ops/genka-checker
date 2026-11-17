@@ -185,19 +185,23 @@ tr.cur td{background:var(--accent-bg);font-weight:bold}
 .shead{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
 .shead b{flex:1;font-size:14.5px}
 .sbody{overflow:auto;padding:12px 14px 16px}
-.paper{border:1.5px solid #2a6b3d;border-radius:6px;overflow-x:auto;background:#fbfdf9}
+.paper{border:1.5px solid #2a6b3d;border-radius:6px;overflow:hidden;background:#fbfdf9}
 @media (prefers-color-scheme:dark){.paper{background:#151c17;border-color:#5fae78}}
-.paper table{border-collapse:collapse;font-size:12px;min-width:1080px;width:100%;color:var(--ink)}
+.tier{margin-bottom:12px}
+.tl{display:inline-block;font-size:11px;font-weight:bold;color:#2a6b3d;margin:0 0 3px 2px}
+@media (prefers-color-scheme:dark){.tl{color:#8fd1a2}}
+.paper table{border-collapse:collapse;font-size:12px;width:100%;table-layout:fixed;color:var(--ink)}
 .paper th{background:#e3f0e6;color:#1d4d2b;font-weight:bold;font-size:10.5px;line-height:1.35;padding:5px 4px;border:1px solid #9cc6a6;text-align:center;vertical-align:middle;white-space:normal}
 @media (prefers-color-scheme:dark){.paper th{background:#203226;color:#bfe6c9;border-color:#3f6b4b}}
 .paper th small{display:block;font-weight:normal;font-size:9.5px}
-.paper td{border:1px solid #c5dccb;padding:7px 5px;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.paper td{border:1px solid #c5dccb;padding:8px 4px;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;line-height:1.35}
+.paper td.l{white-space:normal;overflow-wrap:anywhere}
+@media (max-width:399px){.paper table{font-size:11px}.paper td{padding:7px 3px}.paper th{font-size:10px;padding:4px 2px}.sbody{padding:10px 8px 14px}}
+@media (max-width:339px){.paper table{font-size:10.2px}}
 @media (prefers-color-scheme:dark){.paper td{border-color:#36513f}}
 .paper td.l{text-align:left}.paper td.c{text-align:center}
-.paper tbody td:first-child,.paper tfoot td:first-child{position:sticky;left:0;background:#fbfdf9;z-index:1;box-shadow:2px 0 0 #c5dccb}
-.paper thead th:first-child{position:sticky;left:0;z-index:2}
-@media (prefers-color-scheme:dark){.paper tbody td:first-child,.paper tfoot td:first-child{background:#151c17;box-shadow:2px 0 0 #36513f}}
 .paper .red{color:#c62828;font-weight:bold}
+.paper .nw{white-space:nowrap;letter-spacing:-.2px}
 @media (prefers-color-scheme:dark){.paper .red{color:#ff8a80}}
 .paper th small.red{font-weight:bold;font-size:9.5px}
 .paper tr.sum td{font-weight:bold;background:rgba(42,107,61,.08)}
@@ -296,26 +300,8 @@ tr.cur td{background:var(--accent-bg);font-weight:bold}
     <div class="shead"><b id="fTitle"></b><button type="button" id="fClose">閉じる</button></div>
     <div class="sbody">
       <div id="fNote"></div>
-      <div class="paper"><table>
-        <thead><tr>
-          <th style="min-width:110px">減価償却資産<br>の名称等<small>（繰延資産を含む）</small></th>
-          <th>面積<br>又は<br>数量</th><th>取得<br>年月</th>
-          <th>㋑<br>取得価額<small>（償却保証額）</small></th>
-          <th>㋺<br>償却の基礎<br>になる金額</th>
-          <th>償却<br>方法</th><th>耐用<br>年数</th>
-          <th>㋩<br>償却率又は<br>改定償却率</th>
-          <th>㋥<br>本年中の<br>償却期間</th>
-          <th>㋭<br>本年分の<br>普通償却費<small>（㋺×㋩×㋥）</small></th>
-          <th>㋬<br>割増（特別）<br>償却費</th>
-          <th>㋣<br>本年分の<br>償却費合計<small>（㋭＋㋬）</small></th>
-          <th>㋠<br>事業専用<br>割合</th>
-          <th>㋷<br>本年分の必要<br>経費算入額<small>（㋣×㋠）</small></th>
-          <th>㋦<br>未償却残高<small>（期末残高）</small></th>
-          <th style="min-width:96px">摘要<small class="red">（前年末未償却残高）</small></th>
-        </tr></thead>
-        <tbody id="fBody"></tbody><tfoot id="fFoot"></tfoot>
-      </table></div>
-      <div class="snote">表は横にスクロールできます。㋬割増（特別）償却費は計算していません。均等償却の年は、㋺に取得価額の5%相当額を入れ、㋩は空欄（−）にしています。</div>
+      <div id="fTables"></div>
+      <div class="snote">㋬割増（特別）償却費は計算していません。均等償却の年は、㋺に取得価額の5%相当額を入れ、㋩は空欄（−）にしています。</div>
     </div>
   </div>
 </div>
@@ -790,22 +776,51 @@ function recalc(){
 // ================= 決算書（減価償却費の計算） =================
 const eraShort = y => y >= 2019 ? '令' + (y - 2018) : y >= 1989 ? '平' + (y - 1988) : '昭' + (y - 1925);
 const nf = v => v === '' || v == null ? '' : Number(v).toLocaleString('ja-JP');
+const FCOLS = [
+  {h:'減価償却資産<br>の名称等<small>（繰延資産を含む）</small>', v:r => r.name, c:'l', w:'name'},
+  {h:'面積又は<br>数量', v:() => '', c:'c'},
+  {h:'取得<br>年月', v:r => r.ym, c:'c'},
+  {h:'㋑<br>取得価額<small>（償却保証額）</small>', v:r => nf(r.cost)},
+  {h:'㋺<br>償却の基礎<br>になる金額', v:r => nf(r.basis)},
+  {h:'償却<br>方法', v:r => r.method, c:'c'},
+  {h:'耐用<br>年数', v:r => r.life, c:'c'},
+  {h:'㋩<br>償却率又は<br>改定償却率', v:r => r.rate, c:'c'},
+  {h:'㋥<br>本年中の<br>償却期間', v:r => r.months, c:'c'},
+  {h:'㋭<br>本年分の<br>普通償却費<small>（㋺×㋩×㋥）</small>', v:r => nf(r.dep)},
+  {h:'㋬<br>割増（特別）<br>償却費', v:() => ''},
+  {h:'㋣<br>本年分の<br>償却費合計<small>（㋭＋㋬）</small>', v:r => nf(r.dep)},
+  {h:'㋠<br>事業専用<br>割合', v:r => r.ratio, c:'c'},
+  {h:'㋷<br>本年分の必要<br>経費算入額<small>（㋣×㋠）</small>', v:r => nf(r.exp)},
+  {h:'㋦<br>未償却残高<small>（期末残高）</small>', v:r => nf(r.end)},
+  {h:'摘要<small class="red">（前年末未償却残高）</small>', v:r => (r.memo ? r.memo + '<br>' : '') + '<span class="red nw">' + (r.prev == null ? '（本年取得）' : '(' + nf(r.prev) + ')') + '</span>', c:'l'},
+];
+function renderForm(){
+  const rows = formRows;
+  // 画面幅に合わせて段に分ける（PC・タブレットは2段、スマホは4段）。横スクロールなしで全部見える。
+  const per = $('#fTables').clientWidth >= 720 ? 8 : 4;
+  let html = '';
+  for (let k = 0; k < FCOLS.length; k += per) {
+    const cols = FCOLS.slice(k, k + per);
+    const tier = k / per + 1, tiers = Math.ceil(FCOLS.length / per);
+    html += `<div class="tier">${tiers > 1 ? `<span class="tl">${tiers === 2 ? (tier === 1 ? '上段' : '下段') : tier + '段目'}</span>` : ''}<div class="paper"><table>
+      <colgroup>${cols.map(() => '<col>').join('')}</colgroup>
+      <thead><tr>${cols.map(c => `<th>${c.h}</th>`).join('')}</tr></thead>
+      <tbody>${rows.length ? rows.map(r => `<tr>${cols.map(c => `<td class="${c.c || ''}">${c.v(r)}</td>`).join('')}</tr>`).join('')
+        : `<tr><td colspan="${cols.length}" class="c" style="padding:14px">計算済みの資産がありません</td></tr>`}</tbody>
+    </table></div></div>`;
+  }
+  $('#fTables').innerHTML = html;
+}
 function openForm(){
   const target = Number($('#target').value);
-  const rows = formRows;
-  const sum = k => rows.reduce((a, r) => a + (r[k] || 0), 0);
-  const td = (v, cls = '') => `<td class="${cls}">${v}</td>`;
   $('#fTitle').textContent = `${wareki(target)}分 青色申告決算書　○減価償却費の計算`;
-  $('#fBody').innerHTML = rows.length ? rows.map(r => `<tr>
-      ${td(r.name, 'l')}${td('', 'c')}${td(r.ym, 'c')}${td(nf(r.cost))}${td(nf(r.basis))}${td(r.method, 'c')}${td(r.life, 'c')}${td(r.rate, 'c')}${td(r.months, 'c')}
-      ${td(nf(r.dep))}${td('')}${td(nf(r.dep))}${td(r.ratio, 'c')}${td(nf(r.exp))}${td(nf(r.end))}${td((r.memo ? r.memo + '<br>' : '') + '<span class="red">' + (r.prev == null ? '（本年取得）' : '（' + nf(r.prev) + '）') + '</span>', 'l')}</tr>`).join('')
-    : `<tr><td colspan="16" class="c" style="padding:18px">計算済みの資産がありません</td></tr>`;
-  $('#fFoot').innerHTML = ''; void `<tr class="sum"><td class="l">計</td><td colspan="8"></td>${td(nf(sum('dep')))}<td></td>${td(nf(sum('dep')))}<td></td>${td(nf(sum('exp')))}${td(nf(sum('end')))}<td></td></tr>`;
   $('#fNote').textContent = formPending ? `⚠ 未計算の資産が${formPending}件あります（この表には入っていません）。` : '';
   $('#fNote').style.display = formPending ? 'block' : 'none';
   $('#form').classList.add('on'); document.body.style.overflow = 'hidden';
+  renderForm();
   $('#fClose').focus();
 }
+window.addEventListener('resize', () => { if ($('#form').classList.contains('on')) renderForm(); });
 function closeForm(){ $('#form').classList.remove('on'); document.body.style.overflow = ''; $('#copy').focus(); }
 $('#copy').addEventListener('click', openForm);
 $('#fClose').addEventListener('click', closeForm);
